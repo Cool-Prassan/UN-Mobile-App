@@ -1,0 +1,2205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Foresight - UNMISS</title>
+    
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:opsz,wght@14..32,300;14..32,400;14..32,500;14..32,600;14..32,700;14..32,800&display=swap" rel="stylesheet">
+    
+    <style>
+        /* ====================================================
+           DESIGN SYSTEM — 8px grid, glassmorphism, pill shapes
+           ==================================================== */
+        :root {
+            --s1: 8px; --s2: 16px; --s3: 24px; --s4: 32px; --s5: 40px; --s6: 48px;
+            --surface-0: #000000;
+            --surface-1: #0d0d0d;
+            --surface-2: #161616;
+            --surface-3: #1e1e1e;
+            --surface-4: #282828;
+            --glass: rgba(255,255,255,0.04);
+            --glass-border: rgba(255,255,255,0.08);
+            --glass-hover: rgba(255,255,255,0.07);
+            --text-100: #ffffff;
+            --text-80: #cccccc;
+            --text-60: #999999;
+            --text-40: #666666;
+            --text-20: #333333;
+            --blue: #4f8ff7;
+            --blue-soft: rgba(79,143,247,0.12);
+            --green: #34d399;
+            --green-soft: rgba(52,211,153,0.12);
+            --amber: #fbbf24;
+            --amber-soft: rgba(251,191,36,0.12);
+            --red: #f87171;
+            --red-soft: rgba(248,113,113,0.12);
+            --grad-hero: linear-gradient(165deg, #1a3a6e 0%, #0e1f3d 40%, #060d1a 100%);
+            --grad-blue: linear-gradient(135deg, #4f8ff7, #3366cc);
+            --grad-red: linear-gradient(135deg, #dc2626, #991b1b);
+            --radius-pill: 100px;
+            --radius-card: 20px;
+            --radius-btn: 14px;
+            --radius-sm: 10px;
+            --shadow-glass: 0 8px 32px rgba(0,0,0,0.25);
+            --shadow-float: 0 12px 40px rgba(0,0,0,0.5);
+            --shadow-glow-blue: 0 0 24px rgba(79,143,247,0.2);
+            --ease: cubic-bezier(0.22, 1, 0.36, 1);
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: #000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            -webkit-font-smoothing: antialiased;
+        }
+
+        input, button, select, textarea { font-family: inherit; }
+
+        /* ====== PHONE SHELL ====== */
+        .phone {
+            width: 375px;
+            height: 667px;
+            max-height: 100vh;
+            background: var(--surface-0);
+            overflow: hidden;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .phone .status-bar, .phone .bottom-tab-bar { display: none; }
+        .phone.logged-in .status-bar { display: flex; }
+        .phone.logged-in .bottom-tab-bar { display: flex; }
+
+        /* ====== STATUS BAR ====== */
+        .status-bar {
+            height: 24px;
+            background: transparent;
+            color: var(--text-80);
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 var(--s3);
+            font-size: 12px;
+            font-weight: 600;
+            flex-shrink: 0;
+            position: relative;
+            z-index: 10;
+        }
+        .status-bar .status-bar-icons i { margin-left: 5px; font-size: 11px; }
+
+        /* ====== FLOATING BOTTOM NAV — Instagram-style with center FAB ====== */
+        .bottom-tab-bar {
+            flex-shrink: 0;
+            height: 72px;
+            position: relative;
+            z-index: 100;
+            padding: 0 var(--s2);
+            display: flex;
+            align-items: flex-start;
+            justify-content: center;
+        }
+
+        .bottom-tab-bar-inner {
+            display: flex;
+            align-items: center;
+            justify-content: space-around;
+            width: 100%;
+            max-width: 320px;
+            height: 56px;
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: 28px;
+            padding: 0 var(--s1);
+            backdrop-filter: blur(24px);
+            -webkit-backdrop-filter: blur(24px);
+            box-shadow: var(--shadow-float);
+        }
+
+        .tab-item {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 56px;
+            color: var(--text-40);
+            border: none;
+            background: none;
+            cursor: pointer;
+            font-size: 10px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+            text-transform: uppercase;
+            gap: 4px;
+            transition: color 0.3s var(--ease), transform 0.15s var(--ease);
+            position: relative;
+        }
+        .tab-item i { font-size: 18px; transition: transform 0.3s var(--ease); }
+        .tab-item:active { transform: scale(0.9); }
+        .tab-item.active { color: var(--blue); }
+        .tab-item.active i { transform: scale(1.15); }
+        .tab-item.active::after {
+            content: '';
+            position: absolute;
+            bottom: 6px;
+            width: 4px; height: 4px;
+            background: var(--blue);
+            border-radius: 50%;
+        }
+
+        .tab-icon-wrap { position: relative; display: inline-block; }
+        .tab-badge {
+            position: absolute; top: -6px; right: -10px;
+            min-width: 16px; height: 16px; padding: 0 5px;
+            background: var(--red); color: #fff;
+            font-size: 9px; font-weight: 700;
+            border-radius: var(--radius-pill);
+            display: none; align-items: center; justify-content: center;
+            border: 2px solid var(--surface-2);
+        }
+        .tab-badge.show { display: inline-flex; }
+
+        /* ====== CONTENT ====== */
+        .content {
+            flex: 1; overflow: hidden; position: relative; min-height: 0;
+            display: flex; flex-direction: column;
+        }
+        .screen {
+            display: none; position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow-y: auto; -webkit-overflow-scrolling: touch;
+        }
+        .screen::-webkit-scrollbar { display: none; }
+        .screen:not(.active) { display: none !important; }
+        .screen.active { display: block; }
+        .screen.active.login-screen { display: flex; }
+        .screen.active.home-screen { display: flex; }
+        .screen.active.missions-hub-screen { display: flex; }
+        .screen.active.map-screen { display: block; }
+
+        /* ====================================================
+           LOGIN — Full-bleed immersive hero
+           ==================================================== */
+        .login-screen {
+            background: var(--surface-0);
+            display: flex; flex-direction: column;
+            height: 100%; width: 100%;
+        }
+
+        .login-hero {
+            flex-shrink: 0;
+            min-height: 48%;
+            background: var(--grad-hero);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-end;
+            padding: 0 var(--s4) var(--s5);
+            position: relative;
+            overflow: hidden;
+        }
+        .login-hero::before {
+            content: '';
+            position: absolute;
+            width: 300px; height: 300px;
+            background: radial-gradient(circle, rgba(79,143,247,0.1) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -40%; right: -20%;
+        }
+        .login-hero::after {
+            content: '';
+            position: absolute;
+            width: 200px; height: 200px;
+            background: radial-gradient(circle, rgba(52,211,153,0.06) 0%, transparent 70%);
+            border-radius: 50%;
+            bottom: 10%; left: -15%;
+        }
+
+          .login-logo-img {
+              width: 200px; 
+              height: 200px;
+              object-fit: contain;
+              filter: brightness(0) invert(1);
+              opacity: 0.85;
+              margin-bottom: var(--s3);
+          }
+
+        .login-hero h1 {
+            font-size: 28px; font-weight: 800;
+            letter-spacing: -0.5px;
+            color: var(--text-100);
+            margin-bottom: var(--s1);
+        }
+        .login-hero p {
+            font-size: 11px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-60);
+        }
+
+        .login-form-area {
+            flex: 1;
+            background: var(--surface-0);
+            border-radius: var(--radius-card) var(--radius-card) 0 0;
+            margin-top: -20px;
+            position: relative;
+            z-index: 2;
+            padding: var(--s4) var(--s3) var(--s3);
+        }
+
+        .login-container { max-width: 320px; margin: 0 auto; }
+
+        .field { margin-bottom: var(--s3); }
+        .field-label {
+            display: block;
+            font-size: 11px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-40);
+            margin-bottom: var(--s1);
+        }
+        .field-input {
+            width: 100%;
+            padding: 14px var(--s2);
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            font-size: 15px; color: var(--text-100);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        .field-input:focus {
+            outline: none;
+            border-color: var(--blue);
+            box-shadow: 0 0 0 4px rgba(79,143,247,0.1);
+        }
+        .field-input::placeholder { color: var(--text-40); }
+
+        .login-meta {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: var(--s3);
+            font-size: 13px;
+        }
+        .login-meta span { color: var(--text-40); }
+        .login-meta a { color: var(--blue); text-decoration: none; font-weight: 500; }
+
+        .login-btn {
+            width: 100%;
+            padding: var(--s2);
+            background: var(--text-100);
+            color: var(--surface-0);
+            border: none;
+            border-radius: var(--radius-pill);
+            font-size: 15px; font-weight: 700;
+            cursor: pointer;
+            display: flex; align-items: center; justify-content: center; gap: var(--s1);
+            transition: transform 0.15s var(--ease), box-shadow 0.3s;
+            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
+        }
+        .login-btn:hover { box-shadow: 0 6px 28px rgba(255,255,255,0.15); }
+        .login-btn:active { transform: scale(0.97); }
+
+        /* ====================================================
+           HOME — Revolut-style hero + horizontal scroll sections
+           ==================================================== */
+        .home-screen {
+            background: var(--surface-0);
+            display: flex; flex-direction: column;
+            overflow-y: auto; overflow-x: hidden;
+        }
+
+        /* — Hero gradient banner with big stat — */
+        .home-hero {
+            flex-shrink: 0;
+            background: var(--grad-hero);
+            padding: var(--s3) var(--s3) var(--s5);
+            position: relative;
+            overflow: hidden;
+        }
+        .home-hero::before {
+            content: '';
+            position: absolute;
+            width: 260px; height: 260px;
+            background: radial-gradient(circle, rgba(79,143,247,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+            top: -30%; right: -10%;
+        }
+
+        .home-hero-top {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: var(--s3);
+        }
+        .home-hero-top .greeting {
+            font-size: 15px; font-weight: 400; color: var(--text-60);
+            line-height: 1.5;
+        }
+        .home-hero-top .greeting strong {
+            display: block;
+            font-size: 22px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px;
+        }
+        .home-hero-top .avatar-circle {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            overflow: hidden;
+            border: 2px solid rgba(255,255,255,0.15);
+            display: flex; align-items: center; justify-content: center;
+            flex-shrink: 0;
+        }
+        .home-hero-top .avatar-circle img {
+            width: 100%; height: 100%; object-fit: contain;
+            filter: brightness(0) invert(1);
+            opacity: 0.7;
+        }
+
+        /* Big circular progress ring */
+        .ring-stat {
+            display: flex;
+            align-items: center;
+            gap: var(--s3);
+            margin-bottom: var(--s2);
+        }
+        .ring-wrap {
+            width: 96px; height: 96px;
+            position: relative;
+            flex-shrink: 0;
+        }
+        .ring-wrap svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+        .ring-bg { fill: none; stroke: rgba(255,255,255,0.06); stroke-width: 8; }
+        .ring-fg {
+            fill: none; stroke: var(--green); stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 251.33;
+            stroke-dashoffset: 251.33;
+            transition: stroke-dashoffset 1s var(--ease);
+        }
+        .ring-center {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .ring-center .ring-val {
+            font-size: 22px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px; line-height: 1;
+        }
+        .ring-center .ring-label {
+            font-size: 10px; font-weight: 600; color: var(--text-60);
+            text-transform: uppercase; letter-spacing: 0.5px; margin-top: 2px;
+        }
+
+        .ring-stat-text { flex: 1; }
+        .ring-stat-text .stat-headline {
+            font-size: 11px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-40); margin-bottom: var(--s1);
+        }
+        .ring-stat-text .stat-detail {
+            font-size: 13px; color: var(--text-60); line-height: 1.5;
+        }
+        .ring-stat-text .stat-detail strong { color: var(--text-80); }
+
+        /* — Horizontal quick-action pills — */
+        .quick-actions {
+            display: flex;
+            gap: var(--s1);
+            margin-top: var(--s1);
+        }
+        .qa-pill {
+            display: inline-flex;
+            align-items: center; gap: 6px;
+            padding: var(--s1) 14px;
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.08);
+            border-radius: var(--radius-pill);
+            color: var(--text-80);
+            font-size: 12px; font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: background 0.2s, transform 0.15s var(--ease);
+        }
+        .qa-pill:active { transform: scale(0.95); }
+        .qa-pill i { font-size: 12px; }
+        .qa-pill.danger { background: rgba(248,113,113,0.12); border-color: rgba(248,113,113,0.2); color: var(--red); }
+        .qa-pill.warn { background: rgba(251,191,36,0.1); border-color: rgba(251,191,36,0.15); color: var(--amber); }
+
+        /* — Body sections below the hero — */
+        .home-body {
+            flex: 1;
+            background: var(--surface-0);
+            border-radius: var(--radius-card) var(--radius-card) 0 0;
+            margin-top: -16px;
+            position: relative;
+            z-index: 2;
+            padding: var(--s3) 0 var(--s3);
+        }
+
+        /* Section headings */
+        .section-head {
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 var(--s3);
+            margin-bottom: var(--s2);
+        }
+        .section-head h2 {
+            font-size: 18px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px;
+        }
+        .section-head .link-btn {
+            font-size: 13px; font-weight: 600; color: var(--blue);
+            background: none; border: none; cursor: pointer;
+        }
+
+        /* — Alert banner (tappable, full-width) — */
+        .alert-banner {
+            margin: 0 var(--s3) var(--s3);
+            padding: var(--s2) var(--s2);
+            border-radius: var(--radius-card);
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            display: flex;
+            align-items: center;
+            gap: var(--s2);
+            cursor: pointer;
+            transition: transform 0.15s var(--ease), background 0.2s;
+        }
+        .alert-banner:active { transform: scale(0.98); }
+        .alert-banner.has-alerts {
+            background: linear-gradient(135deg, rgba(220,38,38,0.2), rgba(153,27,27,0.3));
+            border-color: rgba(248,113,113,0.25);
+            animation: soft-pulse 3s ease-in-out infinite;
+        }
+        @keyframes soft-pulse {
+            0%,100% { box-shadow: 0 0 0 0 rgba(248,113,113,0); }
+            50% { box-shadow: 0 0 24px rgba(248,113,113,0.15); }
+        }
+        .alert-banner-icon {
+            width: 44px; height: 44px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 18px; flex-shrink: 0;
+            background: var(--glass);
+        }
+        .alert-banner.has-alerts .alert-banner-icon {
+            background: rgba(248,113,113,0.15); color: var(--red);
+        }
+        .alert-banner:not(.has-alerts) .alert-banner-icon {
+            background: var(--green-soft); color: var(--green);
+        }
+        .alert-banner-text { flex: 1; }
+        .alert-banner-text .ab-title {
+            font-size: 14px; font-weight: 700; color: var(--text-100);
+        }
+        .alert-banner-text .ab-sub {
+            font-size: 12px; color: var(--text-60); margin-top: 2px;
+        }
+        .alert-banner-count {
+            font-size: 18px; font-weight: 800; color: var(--text-100);
+            min-width: var(--s4); text-align: right;
+        }
+        .alert-banner:not(.has-alerts) .alert-banner-count {
+            font-size: 13px; font-weight: 600; color: var(--text-40);
+        }
+
+          /* — Horizontal scrollable task carousel — */
+          .h-scroll {
+              display: flex;
+              gap: var(--s2);
+              margin: 0 var(--s3);
+              padding: 0;
+              overflow-x: auto;
+              scroll-snap-type: x mandatory;
+              -webkit-overflow-scrolling: touch;
+              scrollbar-width: none;
+              margin-bottom: var(--s4);
+          }
+        .h-scroll::-webkit-scrollbar { display: none; }
+
+        .task-card {
+            flex: 0 0 260px;
+            scroll-snap-align: start;
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-card);
+            padding: var(--s2);
+            cursor: pointer;
+            transition: transform 0.15s var(--ease), box-shadow 0.3s;
+        }
+        .task-card:active { transform: scale(0.97); }
+        .task-card:hover { box-shadow: var(--shadow-glass); }
+
+        .task-card-top {
+            display: flex; align-items: center; gap: var(--s1);
+            margin-bottom: var(--s2);
+        }
+        .tc-icon {
+            width: 36px; height: 36px;
+            border-radius: var(--radius-sm);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 14px;
+            flex-shrink: 0;
+        }
+        .tc-icon.green { background: var(--green-soft); color: var(--green); }
+        .tc-icon.blue { background: var(--blue-soft); color: var(--blue); }
+        .tc-icon.amber { background: var(--amber-soft); color: var(--amber); }
+        .tc-icon.red { background: var(--red-soft); color: var(--red); }
+
+        .tc-meta { 
+            flex: 1;
+            min-width: 0;
+        }
+        .tc-meta .tc-name {
+            font-size: 14px; 
+            font-weight: 700; 
+            color: var(--text-100);
+            margin-bottom: 8px;
+            display: block;
+        }
+        .tc-meta .tc-sub {
+            font-size: 11px; 
+            color: var(--text-40);
+            display: block;
+        }
+
+        .tc-badge {
+            padding: 4px 10px;
+            border-radius: var(--radius-pill);
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+            flex-shrink: 0;
+        }
+        .tc-badge.pending { background: var(--amber-soft); color: var(--amber); }
+        .tc-badge.verified { background: var(--green-soft); color: var(--green); }
+
+        .task-card-bar {
+            height: 4px;
+            border-radius: 2px;
+            background: var(--surface-4);
+            overflow: hidden;
+        }
+        .task-card-bar-fill {
+            height: 100%;
+            border-radius: 2px;
+            transition: width 0.8s var(--ease);
+        }
+        .task-card-bar-fill.green { background: var(--green); }
+        .task-card-bar-fill.blue { background: var(--blue); }
+
+        /* — Grid overview cards — */
+        .grid-2 {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--s2);
+            padding: 0 var(--s3);
+            margin-bottom: var(--s4);
+        }
+        .stat-tile {
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-card);
+            padding: var(--s2);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.15s var(--ease);
+        }
+        .stat-tile:active { transform: scale(0.97); }
+        .stat-tile .st-icon {
+            width: 40px; height: 40px;
+            border-radius: 50%;
+            margin: 0 auto var(--s1);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 16px;
+        }
+        .stat-tile .st-icon.blue { background: var(--blue-soft); color: var(--blue); }
+        .stat-tile .st-icon.green { background: var(--green-soft); color: var(--green); }
+        .stat-tile .st-icon.amber { background: var(--amber-soft); color: var(--amber); }
+        .stat-tile .st-icon.red { background: var(--red-soft); color: var(--red); }
+        .stat-tile .st-val {
+            font-size: 22px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px; line-height: 1;
+        }
+        .stat-tile .st-label {
+            font-size: 11px; font-weight: 600; color: var(--text-40);
+            text-transform: uppercase; letter-spacing: 1px;
+            margin-top: 4px;
+        }
+
+        /* ====================================================
+           MISSIONS HUB — 2-column grid cards
+           ==================================================== */
+        .missions-hub-screen {
+            background: var(--surface-0);
+            padding: var(--s4) var(--s3);
+            display: flex; flex-direction: column;
+        }
+        .missions-hub-screen h2 {
+            font-size: 28px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px; margin-bottom: var(--s1);
+        }
+        .missions-hub-screen .subtitle {
+            font-size: 15px; color: var(--text-60);
+            line-height: 1.5; margin-bottom: var(--s4);
+        }
+
+        .mission-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: var(--s2);
+        }
+        .mission-grid-card {
+            background: var(--surface-2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-card);
+            padding: var(--s3) var(--s2);
+            cursor: pointer;
+            text-align: center;
+            transition: transform 0.15s var(--ease), box-shadow 0.3s;
+        }
+        .mission-grid-card:active { transform: scale(0.96); }
+        .mission-grid-card:hover { box-shadow: var(--shadow-glass); }
+        .mgc-icon {
+            width: 56px; height: 56px;
+            border-radius: 50%;
+            margin: 0 auto var(--s2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 22px;
+        }
+        .mgc-icon.green { background: var(--green-soft); color: var(--green); }
+        .mgc-icon.amber { background: var(--amber-soft); color: var(--amber); }
+        .mission-grid-card h3 {
+            font-size: 14px; font-weight: 700; color: var(--text-100);
+            margin-bottom: 4px;
+        }
+        .mission-grid-card p {
+            font-size: 11px; color: var(--text-40); line-height: 1.4;
+        }
+
+        /* ====== ALERTS SCREEN ====== */
+        .alerts-screen {
+            background: var(--surface-0);
+            padding: var(--s3);
+        }
+        .alerts-screen-title {
+            font-size: 28px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px;
+            margin-bottom: var(--s3);
+        }
+
+        .alert-card {
+            background: var(--surface-2);
+            border-radius: var(--radius-card);
+            padding: var(--s2);
+            margin-bottom: var(--s2);
+            border: 1px solid var(--glass-border);
+            border-left: 4px solid var(--red);
+        }
+        .alert-card.warning { border-left-color: var(--amber); }
+
+        .alert-header {
+            display: flex; align-items: center; gap: var(--s1);
+            margin-bottom: var(--s1);
+        }
+        .alert-icon {
+            width: 32px; height: 32px;
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 13px;
+        }
+        .alert-icon.danger { background: var(--red-soft); color: var(--red); }
+        .alert-icon.warning { background: var(--amber-soft); color: var(--amber); }
+        .alert-title { flex: 1; font-size: 14px; font-weight: 700; color: var(--text-100); }
+        .alert-distance { font-size: 12px; color: var(--text-40); font-weight: 600; }
+        .alert-body { font-size: 13px; color: var(--text-60); line-height: 1.5; margin-bottom: var(--s1); }
+        .alert-camps {
+            font-size: 12px; color: var(--text-60);
+            background: var(--surface-3); padding: var(--s1) var(--s2);
+            border-radius: var(--radius-sm);
+        }
+
+        /* ====== MAP SCREEN ====== */
+        .map-screen { 
+            background: var(--surface-0); 
+            position: relative;
+            height: 100%;
+        }
+        #map { 
+            width: 100%; 
+            height: 100%; 
+            position: absolute; 
+            top: 0; 
+            left: 0; 
+            right: 0; 
+            bottom: 0; 
+            z-index: 1;
+        }
+        .map-controls {
+            position: absolute; bottom: var(--s2); left: var(--s2); right: var(--s2);
+            z-index: 1000;
+        }
+
+        .peacekeeper-location {
+            background: var(--surface-2);
+            border-radius: var(--radius-card);
+            padding: var(--s2);
+            box-shadow: var(--shadow-float);
+            display: flex; align-items: center; gap: var(--s2);
+            border: 1px solid var(--glass-border);
+            backdrop-filter: blur(20px);
+        }
+        .peacekeeper-icon {
+            width: 40px; height: 40px;
+            background: var(--grad-blue);
+            border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            color: #fff; font-size: 15px;
+        }
+        .peacekeeper-info { flex: 1; }
+        .peacekeeper-info .name { font-size: 13px; font-weight: 700; color: var(--text-100); }
+        .peacekeeper-info .coords {
+            font-size: 11px; color: var(--text-40); margin-top: 2px;
+            font-family: 'SF Mono', 'Fira Code', monospace;
+        }
+        .nearby-count {
+            background: var(--amber); color: var(--surface-0);
+            padding: 4px 12px; border-radius: var(--radius-pill);
+            font-size: 11px; font-weight: 700;
+        }
+
+        .map-legend-toggle {
+            position: absolute; right: var(--s2); bottom: 80px;
+            width: 36px; height: 36px;
+            border-radius: 50%;
+            border: 1px solid var(--glass-border);
+            background: var(--surface-2); color: var(--text-60);
+            display: flex; align-items: center; justify-content: center;
+            box-shadow: var(--shadow-float); cursor: pointer; font-size: 14px;
+        }
+        .map-legend {
+            display: none; margin-top: var(--s1);
+            background: var(--surface-2);
+            border-radius: var(--radius-card);
+            padding: var(--s2);
+            box-shadow: var(--shadow-float);
+            font-size: 11px; color: var(--text-60);
+            border: 1px solid var(--glass-border);
+        }
+        .map-legend.open { display: block; }
+        .map-legend-title { font-weight: 700; margin-bottom: var(--s1); color: var(--text-100); font-size: 12px; }
+        .map-legend-row { display: flex; align-items: center; gap: var(--s1); margin-bottom: 5px; }
+        .map-legend-row:last-child { margin-bottom: 0; }
+        .legend-swatch { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; }
+        .legend-swatch.peacekeeper { background: var(--green); }
+        .legend-swatch.current { background: var(--blue); }
+        .legend-swatch.predicted { background: var(--red); }
+        .legend-line { width: 20px; height: 3px; border-radius: 999px; flex-shrink: 0; }
+        .legend-line.verified { background: var(--green); }
+        .legend-line.pending { background: var(--blue); }
+        .camp-chip {
+            display: inline-flex; align-items: center; justify-content: center;
+            padding: 3px 10px; border-radius: var(--radius-pill);
+            border: 1px solid var(--glass-border); background: var(--surface-3);
+            font-size: 11px; font-weight: 600; color: var(--blue);
+            cursor: pointer; width: 100%; text-align: center;
+        }
+
+        /* ====== MISSIONS LIST SCREEN ====== */
+        .missions-screen { background: var(--surface-0); padding: var(--s2); }
+
+        .sub-screen-back {
+            display: inline-flex; align-items: center; gap: 6px;
+            background: none; border: none;
+            color: var(--blue); font-size: 14px; font-weight: 600;
+            cursor: pointer; padding: var(--s2) 0;
+        }
+
+        .mission-card {
+            background: var(--surface-2);
+            border-radius: var(--radius-card);
+            padding: var(--s2);
+            margin-bottom: var(--s2);
+            border: 1px solid var(--glass-border);
+        }
+        .mission-header {
+            display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: var(--s1);
+        }
+        .mission-id { font-size: 15px; font-weight: 700; color: var(--text-100); }
+        .mission-status {
+            padding: 4px 12px; border-radius: var(--radius-pill);
+            font-size: 10px; font-weight: 700;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .mission-status.pending { background: var(--surface-4); color: var(--text-40); }
+        .mission-status.verified { background: var(--green-soft); color: var(--green); }
+        .mission-detail {
+            font-size: 13px; color: var(--text-40);
+            margin-bottom: 4px; display: flex; justify-content: space-between;
+        }
+        .mission-detail strong { color: var(--text-80); }
+        .mission-actions { display: flex; gap: var(--s1); margin-top: var(--s2); }
+
+        .btn {
+            flex: 1; padding: 12px; border: none;
+            border-radius: var(--radius-pill);
+            font-size: 13px; font-weight: 700;
+            cursor: pointer; transition: transform 0.15s var(--ease);
+            display: flex; align-items: center; justify-content: center; gap: 6px;
+        }
+        .btn:active { transform: scale(0.96); }
+        .btn-primary {
+            background: var(--surface-4); color: var(--text-80);
+            border: 1px solid var(--glass-border);
+        }
+        .btn-success {
+            background: var(--green); color: #000;
+            box-shadow: 0 4px 16px rgba(52,211,153,0.25);
+        }
+
+        /* ====== VERIFY SCREEN — bottom-sheet style ====== */
+        .verify-screen { background: var(--surface-0); padding: var(--s2); }
+        .verify-card {
+            background: var(--surface-2);
+            border-radius: var(--radius-card);
+            padding: var(--s3);
+            border: 1px solid var(--glass-border);
+        }
+        .verify-header { text-align: center; margin-bottom: var(--s3); }
+        .verify-header h2 {
+            font-size: 20px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px; margin-bottom: 4px;
+        }
+        .verify-header p { font-size: 13px; color: var(--text-40); line-height: 1.5; }
+        .verify-header .camp-id {
+            font-size: 14px; color: var(--blue); font-weight: 700; margin-top: var(--s1);
+        }
+
+        .info-box {
+            background: var(--amber-soft); border-left: 3px solid var(--amber);
+            padding: var(--s2); border-radius: var(--radius-sm); margin-bottom: var(--s3);
+        }
+        .info-box p { font-size: 12px; color: var(--text-80); line-height: 1.5; }
+
+        .form-group { margin-bottom: var(--s2); }
+        .form-label {
+            display: block; font-size: 11px; font-weight: 600;
+            letter-spacing: 1px; text-transform: uppercase;
+            color: var(--text-40); margin-bottom: var(--s1);
+        }
+
+        .choice-btns { display: grid; grid-template-columns: 1fr 1fr; gap: var(--s1); margin-bottom: var(--s2); }
+        .choice-btn {
+            padding: var(--s2);
+            border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn);
+            background: var(--surface-3);
+            cursor: pointer; text-align: center;
+            font-size: 14px; font-weight: 700; color: var(--text-60);
+            transition: all 0.2s var(--ease);
+        }
+        .choice-btn:active { transform: scale(0.96); }
+        .choice-btn.selected {
+            border-color: var(--blue); background: var(--blue-soft);
+            color: var(--blue); box-shadow: var(--shadow-glow-blue);
+        }
+        .choice-btn i { display: block; font-size: 24px; margin-bottom: 6px; }
+
+        input, select, textarea {
+            width: 100%; padding: 14px var(--s2);
+            background: var(--surface-3); border: 1px solid var(--glass-border);
+            border-radius: var(--radius-btn); font-size: 14px; color: var(--text-100);
+            transition: border-color 0.3s, box-shadow 0.3s;
+        }
+        input:focus, select:focus, textarea:focus {
+            outline: none; border-color: var(--blue);
+            box-shadow: 0 0 0 4px rgba(79,143,247,0.1);
+        }
+        input::placeholder, textarea::placeholder { color: var(--text-40); }
+        select { color: var(--text-60); }
+        textarea { min-height: 70px; resize: vertical; font-family: inherit; }
+
+        .photo-upload {
+            border: 2px dashed var(--glass-border);
+            border-radius: var(--radius-btn); padding: var(--s3);
+            text-align: center; cursor: pointer;
+            background: var(--surface-3);
+            transition: all 0.2s;
+        }
+        .photo-upload:hover { border-color: var(--blue); background: var(--blue-soft); }
+        .photo-upload i { font-size: 28px; color: var(--blue); margin-bottom: var(--s1); }
+        .photo-upload p { font-size: 13px; color: var(--text-40); }
+
+        .photo-preview {
+            margin-top: var(--s1); border-radius: var(--radius-sm);
+            overflow: hidden; max-height: 140px;
+        }
+        .photo-preview img { width: 100%; height: auto; display: block; }
+
+        .submit-btn {
+            width: 100%; padding: var(--s2);
+            background: var(--text-100); color: var(--surface-0);
+            border: none; border-radius: var(--radius-pill);
+            font-size: 15px; font-weight: 700; cursor: pointer;
+            margin-top: var(--s2);
+            transition: transform 0.15s var(--ease), box-shadow 0.3s;
+            box-shadow: 0 4px 20px rgba(255,255,255,0.1);
+        }
+        .submit-btn:hover { box-shadow: 0 6px 28px rgba(255,255,255,0.15); }
+        .submit-btn:active { transform: scale(0.97); }
+        .submit-btn:disabled {
+            background: var(--surface-4); color: var(--text-40);
+            cursor: not-allowed; box-shadow: none;
+        }
+
+        /* ====== MODAL — Bottom sheet style ====== */
+        .modal-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            display: none; 
+            align-items: flex-end; 
+            justify-content: center;
+            z-index: 10000; 
+            padding: 0;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
+            pointer-events: none;
+        }
+        .modal-overlay.show { 
+            display: flex; 
+            pointer-events: auto;
+        }
+
+        .modal {
+            background: var(--surface-2);
+            border-radius: var(--radius-card) var(--radius-card) 0 0;
+            padding: var(--s4) var(--s4) var(--s6);
+            text-align: center;
+            width: 100%; 
+            max-width: 375px;
+            border-top: 1px solid var(--glass-border);
+            animation: sheet-up 0.35s var(--ease);
+            max-height: 60vh;
+            overflow-y: auto;
+        }
+        @keyframes sheet-up {
+            from { transform: translateY(100%); }
+            to { transform: translateY(0); }
+        }
+
+        .modal-icon {
+            width: 64px; height: 64px;
+            background: var(--green); border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto var(--s2);
+            box-shadow: 0 4px 24px rgba(52,211,153,0.3);
+        }
+        .modal-icon i { font-size: 28px; color: #fff; }
+        .modal h3 {
+            font-size: 20px; font-weight: 800; color: var(--text-100);
+            letter-spacing: -0.5px; margin-bottom: var(--s1);
+        }
+        .modal p { font-size: 14px; color: var(--text-40); }
+
+        /* Leaflet dark popup overrides */
+        .leaflet-popup-content-wrapper {
+            background: var(--surface-3) !important;
+            color: var(--text-100) !important;
+            border-radius: var(--radius-sm) !important;
+            box-shadow: var(--shadow-float) !important;
+        }
+        .leaflet-popup-tip { background: var(--surface-3) !important; }
+    </style>
+</head>
+<body>
+    <div class="phone">
+        <!-- Status Bar -->
+        <div class="status-bar">
+            <span id="time">9:41</span>
+            <span class="status-bar-icons">
+                <i class="fas fa-signal"></i>
+                <i class="fas fa-wifi"></i>
+                <i class="fas fa-battery-three-quarters"></i>
+            </span>
+        </div>
+
+        <!-- Content -->
+        <div class="content">
+            <!-- ======== LOGIN ======== -->
+            <div id="login" class="screen active login-screen">
+                <div class="login-hero">
+                    <img src="assets/UN_emblem.png" alt="UN" class="login-logo-img">
+                    <h1>Foresight</h1>
+                    <p>United Nations Mission</p>
+                </div>
+                <div class="login-form-area">
+                    <div class="login-container">
+                        <div class="field">
+                            <label class="field-label">Badge Number</label>
+                            <input type="text" class="field-input" id="badge-number" placeholder="Enter badge number" autocomplete="off">
+                        </div>
+                        <div class="field">
+                            <label class="field-label">Password</label>
+                            <input type="password" class="field-input" id="access-code" placeholder="Enter password" autocomplete="off">
+                        </div>
+                        <div class="login-meta">
+                            <span>Remember me</span>
+                            <a href="#">Forgot Password?</a>
+                        </div>
+                        <button class="login-btn" onclick="handleLogin()">
+                            Sign In <i class="fas fa-arrow-right"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== HOME ======== -->
+            <div id="home" class="screen home-screen">
+                <!-- Hero gradient banner -->
+                <div class="home-hero">
+                    <div class="home-hero-top">
+                        <div class="greeting">
+                            <span id="dashboard-subtitle">Loading...</span>
+                            <strong id="greeting-name">Dashboard</strong>
+                        </div>
+                        <div class="avatar-circle">
+                            <img src="assets/UN_emblem.png" alt="UN">
+                        </div>
+                    </div>
+
+                    <!-- Circular progress ring -->
+                    <div class="ring-stat">
+                        <div class="ring-wrap">
+                            <svg viewBox="0 0 96 96">
+                                <circle class="ring-bg" cx="48" cy="48" r="40"/>
+                                <circle class="ring-fg" id="ring-fg" cx="48" cy="48" r="40"/>
+                            </svg>
+                            <div class="ring-center">
+                                <span class="ring-val" id="donut-value">--</span>
+                                <span class="ring-label">Done</span>
+                            </div>
+                        </div>
+                        <div class="ring-stat-text">
+                            <div class="stat-headline">Today's Progress</div>
+                            <div class="stat-detail" id="mission-camp-list">
+                                <span><strong>0</strong> verified</span> &middot;
+                                <span><strong>0</strong> pending</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Quick actions row -->
+                    <div class="quick-actions">
+                        <div class="qa-pill" onclick="switchTab('missions-hub')"><i class="fas fa-tasks"></i> Missions</div>
+                        <div class="qa-pill" onclick="switchTab('map-screen')"><i class="fas fa-map"></i> Map</div>
+                        <div class="qa-pill warn" onclick="switchTab('alerts')"><i class="fas fa-bell"></i> Alerts</div>
+                    </div>
+                </div>
+
+                <!-- Body sections -->
+                <div class="home-body">
+                    <!-- Alert banner -->
+                    <div id="summary-alerts-wrap" class="alert-banner" onclick="switchTab('alerts')">
+                        <div class="alert-banner-icon" id="summary-alerts-icon">
+                            <i class="fas fa-shield-check"></i>
+                        </div>
+                        <div class="alert-banner-text">
+                            <div class="ab-title" id="summary-alerts-text">Checking alerts...</div>
+                            <div class="ab-sub" id="summary-alerts-sub">Tap to view details</div>
+                        </div>
+                        <div class="alert-banner-count" id="summary-alerts">0</div>
+                    </div>
+
+                    <!-- Today's tasks - horizontal carousel -->
+                    <div class="section-head">
+                        <h2>Today's Tasks</h2>
+                        <button type="button" class="link-btn" onclick="switchTab('missions-hub')">View all</button>
+                    </div>
+                    <div class="h-scroll" id="dashboard-recent-list">
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== MISSIONS HUB ======== -->
+            <div id="missions-hub" class="screen missions-hub-screen">
+                <h2>Missions</h2>
+                <p class="subtitle">Choose a verification type to get started</p>
+                <div class="mission-grid">
+                    <div class="mission-grid-card" onclick="showScreen('current-camps')">
+                        <div class="mgc-icon green"><i class="fas fa-location-dot"></i></div>
+                        <h3>Current Camps</h3>
+                        <p>Verify active cattle at current locations</p>
+                    </div>
+                    <div class="mission-grid-card" onclick="showScreen('predictions')">
+                        <div class="mgc-icon amber"><i class="fas fa-route"></i></div>
+                        <h3>Predictions</h3>
+                        <p>Validate 4-week movement forecasts</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== ALERTS ======== -->
+            <div id="alerts" class="screen alerts-screen">
+                <div class="alerts-screen-title">Alerts</div>
+                <div id="alerts-list"></div>
+            </div>
+
+            <!-- ======== MAP ======== -->
+            <div id="map-screen" class="screen map-screen">
+                <div id="map"></div>
+                <div class="map-controls">
+                    <div class="peacekeeper-location">
+                        <div class="peacekeeper-icon"><i class="fas fa-user"></i></div>
+                        <div class="peacekeeper-info">
+                            <div class="name">Your Location</div>
+                            <div class="coords">6.2145°N, 31.5678°E</div>
+                        </div>
+                        <div class="nearby-count" id="nearby-count">3 nearby</div>
+                    </div>
+                    <button type="button" class="map-legend-toggle" onclick="toggleMapLegend()">
+                        <i class="fas fa-info-circle"></i>
+                    </button>
+                    <div class="map-legend" id="map-legend">
+                        <div class="map-legend-title">Legend</div>
+                        <div class="map-legend-row"><span class="legend-swatch peacekeeper"></span><span>Peacekeeper location</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch current"></span><span>Current camp locations</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch predicted"></span><span>4-week predicted locations</span></div>
+                        <div class="map-legend-row"><span class="legend-swatch" style="background:#fbbf24;"></span><span>Conflict alert zones</span></div>
+                        <div class="map-legend-row"><span class="legend-line pending"></span><span>Predicted movement (pending)</span></div>
+                        <div class="map-legend-row"><span class="legend-line verified"></span><span>Movement verified on ground</span></div>
+                        <div class="map-legend-row" style="margin-top:4px;"><span style="font-weight:700;">Summary:</span><span id="map-summary-text">Loading...</span></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ======== CURRENT CAMPS ======== -->
+            <div id="current-camps" class="screen missions-screen">
+                <button type="button" class="sub-screen-back" onclick="showScreen('missions-hub')">
+                    <i class="fas fa-chevron-left"></i> Missions
+                </button>
+                <div id="current-camps-list"></div>
+            </div>
+
+            <!-- ======== PREDICTIONS ======== -->
+            <div id="predictions" class="screen missions-screen">
+                <button type="button" class="sub-screen-back" onclick="showScreen('missions-hub')">
+                    <i class="fas fa-chevron-left"></i> Missions
+                </button>
+                <div id="predictions-list"></div>
+            </div>
+
+            <!-- ======== VERIFY CURRENT ======== -->
+            <div id="verify-current" class="screen verify-screen">
+                <button type="button" class="sub-screen-back" onclick="goBack()">
+                    <i class="fas fa-chevron-left"></i> Back
+                </button>
+                <div class="verify-card">
+                    <div class="verify-header">
+                        <h2>Verify Current Camp</h2>
+                        <p>Confirm the presence of cattle at this location</p>
+                        <div class="camp-id">Camp: <span id="confirm-current-camp-id">Select a camp</span></div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Did you find cattle here?</label>
+                        <div class="choice-btns">
+                            <div class="choice-btn" onclick="selectChoice('yes', this)">
+                                <i class="fas fa-check-circle"></i> Yes, Found
+                            </div>
+                            <div class="choice-btn" onclick="selectChoice('no', this)">
+                                <i class="fas fa-times-circle"></i> Not Found
+                            </div>
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" placeholder="Enter your name" id="current-verifier-name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Herd Size</label>
+                        <select id="current-herd-size">
+                            <option>Select size</option>
+                            <option>Small (< 50)</option>
+                            <option>Medium (50-200)</option>
+                            <option>Large (200+)</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Notes</label>
+                        <textarea placeholder="Additional observations..." id="current-notes"></textarea>
+                    </div>
+                    <button class="submit-btn" onclick="submitCurrentVerification()">
+                        <i class="fas fa-paper-plane"></i> Submit Verification
+                    </button>
+                </div>
+            </div>
+
+            <!-- ======== VERIFY PREDICTION ======== -->
+            <div id="verify-prediction" class="screen verify-screen">
+                <button type="button" class="sub-screen-back" onclick="goBack()">
+                    <i class="fas fa-chevron-left"></i> Back
+                </button>
+                <div class="verify-card">
+                    <div class="verify-header">
+                        <h2>Validate Environment</h2>
+                        <p>Confirm environmental conditions match predictions</p>
+                        <div class="camp-id">Camp: <span id="confirm-prediction-camp-id">Select a prediction</span></div>
+                    </div>
+                    <div class="info-box">
+                        <p><strong>Note:</strong> Take a photo of the area to validate the environmental data.</p>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Photo of Location</label>
+                        <input type="file" id="photo-input" accept="image/*" capture="environment" style="display: none;" onchange="handlePhotoUpload(event)">
+                        <div class="photo-upload" onclick="document.getElementById('photo-input').click()">
+                            <i class="fas fa-camera"></i>
+                            <p>Tap to capture photo</p>
+                        </div>
+                        <div class="photo-preview" id="photo-preview" style="display: none;">
+                            <img id="preview-img" src="" alt="Preview">
+                        </div>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Your Name</label>
+                        <input type="text" placeholder="Enter your name" id="prediction-verifier-name">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Environmental Observations</label>
+                        <textarea placeholder="Describe vegetation, water sources, terrain..." id="prediction-notes"></textarea>
+                    </div>
+                    <button class="submit-btn" id="submit-btn" onclick="submitPredictionVerification()">
+                        <i class="fas fa-paper-plane"></i> Submit Validation
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Floating Bottom Nav -->
+        <nav class="bottom-tab-bar" id="bottom-tab-bar">
+            <div class="bottom-tab-bar-inner">
+                <button type="button" class="tab-item active" data-tab="home" onclick="switchTab('home')">
+                    <i class="fas fa-home"></i><span>Home</span>
+                </button>
+                <button type="button" class="tab-item" data-tab="alerts" onclick="switchTab('alerts')">
+                    <span class="tab-icon-wrap">
+                        <i class="fas fa-bell"></i>
+                        <span class="tab-badge" id="alert-count">0</span>
+                    </span>
+                    <span>Alerts</span>
+                </button>
+                <button type="button" class="tab-item" data-tab="map-screen" onclick="switchTab('map-screen')">
+                    <i class="fas fa-map-location-dot"></i><span>Map</span>
+                </button>
+                <button type="button" class="tab-item" data-tab="missions-hub" onclick="switchTab('missions-hub')">
+                    <i class="fas fa-clipboard-check"></i><span>Missions</span>
+                </button>
+            </div>
+        </nav>
+
+        <!-- Success Modal — bottom sheet -->
+        <div class="modal-overlay" id="modal">
+            <div class="modal">
+                <div class="modal-icon"><i class="fas fa-check"></i></div>
+                <h3>Success!</h3>
+                <p>Verification submitted successfully</p>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/10.7.1/firebase-storage-compat.js"></script>
+
+    <script>
+        // Firebase Config
+        const firebaseConfig = {
+            apiKey: "AIzaSyA0qxi1LqlC8ZfrVOz3bEvujk1NRlLxzWM",
+            authDomain: "cattle-tracker-9bac7.firebaseapp.com",
+            projectId: "cattle-tracker-9bac7",
+            storageBucket: "cattle-tracker-9bac7.firebasestorage.app",
+            messagingSenderId: "1046317277294",
+            appId: "1:1046317277294:web:d000eb6d9ba8a471ce067f"
+        };
+
+        let db, storage;
+        try {
+            firebase.initializeApp(firebaseConfig);
+            db = firebase.firestore();
+            storage = firebase.storage();
+            console.log('Firebase initialized successfully');
+        } catch (e) {
+            console.warn('Firebase init failed:', e);
+            db = null;
+            storage = null;
+        }
+
+        // Global state
+        let currentUser = null;
+        let selectedCamp = null;
+        let selectedChoice = null;
+        let uploadedPhotoFile = null;
+        let screenHistory = ['login'];
+        let allCamps = [];
+        let peacekeeperLocation = { lat: 6.2145, lon: 31.5678 };
+        const CURRENT_REGION_LABEL = 'Bor, Jonglei State';
+        let mapFocusCamp = null;
+        window.campMarkers = { current: {}, prediction: {} };
+
+        const DEMO_VERIFIED_CAMPS = ['camp_0001', 'camp_0002', 'camp_0005', 'camp_0008', 'camp_0011'];
+        const CURRENT_CAMP_VERIFY_RADIUS_KM = 2;
+        const MAX_PREDICTIONS_TO_SHOW = 3;
+
+        // Update time
+        function updateTime() {
+            const now = new Date();
+            document.getElementById('time').textContent =
+                now.getHours().toString().padStart(2, '0') + ':' +
+                now.getMinutes().toString().padStart(2, '0');
+        }
+        updateTime();
+        setInterval(updateTime, 60000);
+
+        // LOGIN
+        function handleLogin() {
+            const badgeInput = document.getElementById('badge-number');
+            const codeInput = document.getElementById('access-code');
+            const badge = (badgeInput && badgeInput.value) ? badgeInput.value.trim() : '';
+            const code = (codeInput && codeInput.value) ? codeInput.value.trim() : '';
+
+            const validUsers = [
+                { badge: 'UNMISS-2024', code: 'peace', name: 'Officer Kimani' },
+                { badge: 'UNMISS-2025', code: 'sentinel', name: 'Officer Chen' },
+                { badge: 'UNMISS-2026', code: 'guardian', name: 'Officer Okonkwo' }
+            ];
+
+            const user = validUsers.find(u =>
+                String(u.badge).toLowerCase() === badge.toLowerCase() &&
+                String(u.code).toLowerCase() === code.toLowerCase()
+            );
+
+            if (user) {
+                currentUser = user;
+                document.querySelector('.phone').classList.add('logged-in');
+                document.getElementById('login').classList.remove('active');
+                document.getElementById('home').classList.add('active');
+                screenHistory = ['home'];
+                setActiveTab('home');
+                updateDashboardGreeting();
+                if (badgeInput) badgeInput.value = '';
+                if (codeInput) codeInput.value = '';
+                if (db) loadData();
+                else updateDashboardStatus(0, 0);
+            } else {
+                alert('Invalid credentials. Try: Badge UNMISS-2024, Code peace');
+            }
+        }
+
+        var accessCodeEl = document.getElementById('access-code');
+        if (accessCodeEl) accessCodeEl.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') handleLogin();
+        });
+
+        function updateDashboardGreeting() {
+            var dateStr = new Date().toLocaleDateString(undefined, {
+                weekday: 'short', day: 'numeric', month: 'short', year: 'numeric'
+            });
+            var officerName = (currentUser && currentUser.name) ? currentUser.name : 'Officer';
+            var subEl = document.getElementById('dashboard-subtitle');
+            if (subEl) subEl.textContent = dateStr;
+            var nameEl = document.getElementById('greeting-name');
+            if (nameEl) nameEl.textContent = officerName;
+        }
+
+        function updateDashboardStatus(alertCount, pendingCount, totalToday) {
+            var alertCountEl = document.getElementById('alert-count');
+            if (alertCountEl) {
+                alertCountEl.textContent = alertCount;
+                if (alertCount > 0) alertCountEl.classList.add('show');
+                else alertCountEl.classList.remove('show');
+            }
+            var wrap = document.getElementById('summary-alerts-wrap');
+            var textEl = document.getElementById('summary-alerts-text');
+            var subEl = document.getElementById('summary-alerts-sub');
+            var countEl = document.getElementById('summary-alerts');
+            var iconEl = document.getElementById('summary-alerts-icon');
+            if (wrap) {
+                if (alertCount > 0) {
+                    wrap.classList.add('has-alerts');
+                    if (textEl) textEl.textContent = alertCount === 1 ? '1 proximity alert' : alertCount + ' proximity alerts';
+                    if (subEl) subEl.textContent = 'Tap to review and stay aware';
+                    if (countEl) countEl.textContent = alertCount;
+                    if (iconEl) iconEl.innerHTML = '<i class="fas fa-exclamation-triangle"></i>';
+                } else {
+                    wrap.classList.remove('has-alerts');
+                    if (textEl) textEl.textContent = 'All clear in your area';
+                    if (subEl) subEl.textContent = 'No camp proximity alerts right now';
+                    if (countEl) countEl.textContent = '\u2014';
+                    if (iconEl) iconEl.innerHTML = '<i class="fas fa-shield-check"></i>';
+                }
+            }
+            // Update stat tiles
+            var statAlerts = document.getElementById('stat-alerts');
+            if (statAlerts) statAlerts.textContent = alertCount;
+        }
+
+        // Distance calculation
+        function calculateDistance(lat1, lon1, lat2, lon2) {
+            const R = 6371;
+            const dLat = (lat2 - lat1) * Math.PI / 180;
+            const dLon = (lon2 - lon1) * Math.PI / 180;
+            const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+                      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+                      Math.sin(dLon/2) * Math.sin(dLon/2);
+            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+            return R * c;
+        }
+
+        function getDirection(lat1, lon1, lat2, lon2) {
+            const dLon = lon2 - lon1;
+            const y = Math.sin(dLon) * Math.cos(lat2);
+            const x = Math.cos(lat1) * Math.sin(lat2) - Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLon);
+            const bearing = Math.atan2(y, x) * 180 / Math.PI;
+            const directions = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+            const index = Math.round(((bearing + 360) % 360) / 45) % 8;
+            return directions[index];
+        }
+
+        // SVG ring helper
+        function setRingProgress(pct) {
+            var el = document.getElementById('ring-fg');
+            if (!el) return;
+            var circumference = 2 * Math.PI * 40; // r=40
+            var offset = circumference - (pct / 100) * circumference;
+            el.style.strokeDashoffset = offset;
+        }
+
+        function refreshDashboard() {
+            console.log('=== Refreshing Dashboard ===');
+            console.log('Total camps:', allCamps.length);
+            
+            // Get initial daily target camps (set once at start of session)
+            if (!window.dailyTargetCamps) {
+                const withDistances = allCamps.map(c => ({
+                    ...c,
+                    distance: calculateDistance(
+                        peacekeeperLocation.lat, peacekeeperLocation.lon,
+                        c.current_lat, c.current_lon
+                    )
+                }));
+                const nearby = withDistances
+                    .filter(c => c.distance <= CURRENT_CAMP_VERIFY_RADIUS_KM)
+                    .sort((a, b) => a.distance - b.distance);
+                
+                // Set initial target camps (first 3 nearby)
+                const maxToday = 3;
+                window.dailyTargetCamps = nearby.slice(0, maxToday).map(c => c.camp_id);
+                window.completedCampIds = new Set();
+                console.log('Set daily target camps:', window.dailyTargetCamps);
+            }
+            
+            const totalToday = window.dailyTargetCamps.length;
+            const completedToday = window.completedCampIds.size;
+            const pctToday = totalToday ? Math.round((completedToday / totalToday) * 100) : 0;
+
+            console.log('Daily targets:', totalToday, 'Completed:', completedToday, 'Progress:', pctToday + '%');
+
+            // Update ring
+            setRingProgress(pctToday);
+            var donutValue = document.getElementById('donut-value');
+            if (donutValue) {
+                donutValue.textContent = totalToday ? (completedToday + '/' + totalToday) : '--';
+                console.log('Updated donut value to:', donutValue.textContent);
+            }
+
+            // Update stat tiles - exclude not_found camps
+            const activeCamps = allCamps.filter(c => !c.not_found);
+            var statCamps = document.getElementById('stat-camps');
+            if (statCamps) statCamps.textContent = activeCamps.length;
+            var totalVerified = activeCamps.filter(c => c.current_verified).length;
+            var totalPending = activeCamps.length - totalVerified;
+            var statVerified = document.getElementById('stat-verified');
+            if (statVerified) statVerified.textContent = totalVerified;
+            var statPending = document.getElementById('stat-pending');
+            if (statPending) statPending.textContent = totalPending;
+
+            console.log('Stats - Total camps:', activeCamps.length, 'Verified:', totalVerified, 'Pending:', totalPending);
+
+            // Update legend text
+            var legendEl = document.getElementById('mission-camp-list');
+            if (legendEl) {
+                legendEl.innerHTML = '<strong>' + totalVerified + '</strong> verified &middot; <strong>' + totalPending + '</strong> pending';
+            }
+
+            // Show only incomplete daily target camps
+            const remainingDailyCamps = allCamps.filter(c => 
+                window.dailyTargetCamps.includes(c.camp_id) && 
+                !window.completedCampIds.has(c.camp_id)
+            ).map(c => ({
+                ...c,
+                distance: calculateDistance(
+                    peacekeeperLocation.lat, peacekeeperLocation.lon,
+                    c.current_lat, c.current_lon
+                )
+            })).sort((a, b) => a.distance - b.distance);
+
+            console.log('Remaining daily camps to show:', remainingDailyCamps.length);
+
+            // Horizontal task carousel
+            var recentList = document.getElementById('dashboard-recent-list');
+            if (recentList) {
+                recentList.innerHTML = '';
+                if (remainingDailyCamps.length === 0) {
+                    // Show completion message
+                    recentList.innerHTML = '<div class="task-card"><div class="task-card-top"><div class="tc-icon green"><i class="fas fa-check-circle"></i></div><div class="tc-meta"><span class="tc-name">All tasks complete!</span><span class="tc-sub">Great work today</span></div></div></div>';
+                } else {
+                    remainingDailyCamps.forEach(function(c) {
+                        var id = String(c.camp_id || '').replace(/'/g, "\\'");
+                        var iconClass = 'blue';
+                        var status = 'pending';
+                        var barPct = '30';
+                        var barColor = 'blue';
+                        var div = document.createElement('div');
+                        div.className = 'task-card';
+                        div.onclick = function() { selectCampById(id, 'current'); };
+                        div.innerHTML =
+                            '<div class="task-card-top">' +
+                                '<div class="tc-icon ' + iconClass + '"><i class="fas fa-location-dot"></i></div>' +
+                                '<div class="tc-meta"><span class="tc-name">Camp ' + c.camp_id + '</span><span class="tc-sub">' + c.distance.toFixed(1) + ' km away</span></div>' +
+                                '<span class="tc-badge ' + status + '">' + status + '</span>' +
+                            '</div>' +
+                            '<div class="task-card-bar"><div class="task-card-bar-fill ' + barColor + '" style="width:' + barPct + '%"></div></div>';
+                        recentList.appendChild(div);
+                    });
+                }
+            }
+            const conflicts = detectConflicts(allCamps);
+            const remainingToday = totalToday - completedToday;
+            updateDashboardStatus(conflicts.length, remainingToday, totalToday);
+            console.log('=== Dashboard Refresh Complete ===');
+        }
+
+        // Load data
+        function loadData() {
+            if (!db) {
+                setRingProgress(0);
+                var donutValue = document.getElementById('donut-value');
+                if (donutValue) donutValue.textContent = '--';
+                var recentList = document.getElementById('dashboard-recent-list');
+                if (recentList) recentList.innerHTML = '<div class="task-card"><div class="task-card-top"><div class="tc-icon blue"><i class="fas fa-info-circle"></i></div><div class="tc-meta"><span class="tc-name">No data</span><span class="tc-sub">Connect to load camps</span></div></div></div>';
+                updateDashboardStatus(0, 0);
+                return;
+            }
+            db.collection('predictions').get().then(snapshot => {
+                allCamps = [];
+                snapshot.forEach(doc => {
+                    const data = doc.data();
+                    if (DEMO_VERIFIED_CAMPS.includes(data.camp_id)) data.env_verified = true;
+                    allCamps.push(data);
+                });
+                console.log('Loaded camps:', allCamps.length);
+                refreshDashboard();
+            }).catch(err => {
+                console.error('Error loading camps:', err);
+            });
+        }
+
+        // Detect conflicts
+        function detectConflicts(camps) {
+            // Only check active camps (not marked as not_found)
+            const activeCamps = camps.filter(c => !c.not_found);
+            const conflicts = [];
+            const CRITICAL_KM = 3;
+            const NEARBY_KM = 15;
+
+            for (let i = 0; i < activeCamps.length; i++) {
+                for (let j = i + 1; j < activeCamps.length; j++) {
+                    const dist = calculateDistance(
+                        activeCamps[i].current_lat, activeCamps[i].current_lon,
+                        activeCamps[j].current_lat, activeCamps[j].current_lon
+                    );
+                    const midLat = (activeCamps[i].current_lat + activeCamps[j].current_lat) / 2;
+                    const midLon = (activeCamps[i].current_lon + activeCamps[j].current_lon) / 2;
+                    const fromPeacekeeper = calculateDistance(
+                        peacekeeperLocation.lat, peacekeeperLocation.lon, midLat, midLon
+                    );
+                    if (dist < CRITICAL_KM && fromPeacekeeper <= NEARBY_KM) {
+                        conflicts.push({
+                            camp1: activeCamps[i].camp_id,
+                            camp2: activeCamps[j].camp_id,
+                            distance: dist,
+                            distanceFromPeacekeeper: fromPeacekeeper
+                        });
+                    }
+                }
+            }
+            return conflicts.slice(0, 5);
+        }
+
+        // Load alerts
+        function loadAlerts() {
+            const conflicts = detectConflicts(allCamps);
+            const list = document.getElementById('alerts-list');
+            list.innerHTML = '';
+
+            if (conflicts.length === 0) {
+                list.innerHTML = '<div style="padding: 60px 20px; text-align: center;">' +
+                    '<div style="width:72px;height:72px;border-radius:50%;background:rgba(52,211,153,0.1);display:flex;align-items:center;justify-content:center;margin:0 auto 16px;">' +
+                    '<i class="fas fa-shield-check" style="font-size:32px;color:var(--green);"></i></div>' +
+                    '<h3 style="font-size:20px;font-weight:800;color:var(--text-100);margin-bottom:8px;letter-spacing:-0.5px;">All Clear</h3>' +
+                    '<p style="color:var(--text-40);font-size:14px;">No conflict warnings in your area</p></div>';
+                return;
+            }
+
+            conflicts.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'alert-card';
+                div.innerHTML = '<div class="alert-header">' +
+                    '<div class="alert-icon danger"><i class="fas fa-exclamation-triangle"></i></div>' +
+                    '<div class="alert-title">Current Camp Conflict</div>' +
+                    '<div class="alert-distance">' + c.distanceFromPeacekeeper.toFixed(1) + ' km</div></div>' +
+                    '<div class="alert-body">Two active cattle camps are critically close, creating immediate resource competition risk.</div>' +
+                    '<div class="alert-camps"><strong>' + c.camp1 + '</strong> and <strong>' + c.camp2 + '</strong> • ' + c.distance.toFixed(1) + ' km apart</div>' +
+                    '<button class="btn btn-primary" style="width:100%;margin-top:12px;" onclick="viewConflictOnMap(\'' + c.camp1.replace(/'/g, "\\'") + '\', \'' + c.camp2.replace(/'/g, "\\'") + '\')"><i class="fas fa-map-marked-alt"></i> View on Map</button>';
+                list.appendChild(div);
+            });
+        }
+
+        // Load camps
+        function loadCurrentCamps() {
+            // Filter out not_found camps
+            const activeCamps = allCamps.filter(c => !c.not_found);
+            const camps = activeCamps.map(c => ({
+                ...c,
+                distance: calculateDistance(peacekeeperLocation.lat, peacekeeperLocation.lon, c.current_lat, c.current_lon),
+                direction: getDirection(peacekeeperLocation.lat, peacekeeperLocation.lon, c.current_lat, c.current_lon)
+            })).filter(c => c.distance <= CURRENT_CAMP_VERIFY_RADIUS_KM).sort((a, b) => a.distance - b.distance);
+
+            const list = document.getElementById('current-camps-list');
+            list.innerHTML = '';
+
+            if (camps.length === 0) {
+                list.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--text-40);">' +
+                    '<i class="fas fa-location-crosshairs" style="font-size: 48px; margin-bottom: 16px; opacity: 0.3;"></i>' +
+                    '<p>No camps within 2km</p></div>';
+                return;
+            }
+
+            camps.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'mission-card';
+                div.innerHTML = '<div class="mission-header">' +
+                    '<div class="mission-id">' + c.camp_id + '</div>' +
+                    '<div class="mission-status ' + (c.current_verified ? 'verified' : 'pending') + '">' +
+                    (c.current_verified ? 'VERIFIED' : 'PENDING') + '</div></div>' +
+                    '<div class="mission-detail"><span>Distance</span><strong>' + c.distance.toFixed(1) + ' km ' + c.direction + '</strong></div>' +
+                    '<div class="mission-detail"><span>Location</span><strong>' + c.current_lat.toFixed(4) + '\u00b0N</strong></div>' +
+                    '<div class="mission-actions">' +
+                    '<button class="btn btn-primary" onclick="navigateToCamp(\'' + (c.camp_id || '').replace(/'/g, "\\'") + '\', \'current\')"><i class="fas fa-compass"></i> Navigate</button>' +
+                    '<button class="btn btn-success" onclick="selectCampById(\'' + (c.camp_id || '').replace(/'/g, "\\'") + '\', \'current\')"><i class="fas fa-check"></i> Verify</button></div>';
+                list.appendChild(div);
+            });
+        }
+
+        function loadPredictions() {
+            // Filter out not_found camps
+            const activeCamps = allCamps.filter(c => !c.not_found);
+            const camps = activeCamps.map(c => ({
+                ...c,
+                distance: calculateDistance(peacekeeperLocation.lat, peacekeeperLocation.lon, c.predicted_lat_4wk, c.predicted_lon_4wk),
+                direction: getDirection(peacekeeperLocation.lat, peacekeeperLocation.lon, c.predicted_lat_4wk, c.predicted_lon_4wk)
+            })).sort((a, b) => a.distance - b.distance).slice(0, MAX_PREDICTIONS_TO_SHOW);
+
+            const list = document.getElementById('predictions-list');
+            list.innerHTML = '';
+
+            camps.forEach(c => {
+                const div = document.createElement('div');
+                div.className = 'mission-card';
+                const date = new Date();
+                date.setDate(date.getDate() + 28);
+                div.innerHTML = '<div class="mission-header">' +
+                    '<div class="mission-id">' + c.camp_id + '</div>' +
+                    '<div class="mission-status ' + (c.env_verified ? 'verified' : 'pending') + '">' +
+                    (c.env_verified ? 'VERIFIED' : 'PENDING') + '</div></div>' +
+                    '<div class="mission-detail"><span>Distance</span><strong>' + c.distance.toFixed(1) + ' km ' + c.direction + '</strong></div>' +
+                    '<div class="mission-detail"><span>Expected Date</span><strong>' + date.toLocaleDateString() + '</strong></div>' +
+                    '<div class="mission-actions">' +
+                    '<button class="btn btn-primary" onclick="navigateToCamp(\'' + (c.camp_id || '').replace(/'/g, "\\'") + '\', \'prediction\')"><i class="fas fa-compass"></i> Navigate</button>' +
+                    '<button class="btn btn-success" onclick="selectCampById(\'' + (c.camp_id || '').replace(/'/g, "\\'") + '\', \'prediction\')"><i class="fas fa-check"></i> Verify</button></div>';
+                list.appendChild(div);
+            });
+        }
+
+        // Tab switching
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab-item').forEach(function(t) {
+                t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+            });
+            showScreen(tabId, false);
+        }
+
+        function setActiveTab(tabId) {
+            document.querySelectorAll('.tab-item').forEach(function(t) {
+                t.classList.toggle('active', t.getAttribute('data-tab') === tabId);
+            });
+        }
+
+        // Navigation
+        function showScreen(screenId, isBack) {
+            if (screenId === 'map') screenId = 'map-screen';
+
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            var el = document.getElementById(screenId);
+            if (el) el.classList.add('active');
+
+            if (!isBack) screenHistory.push(screenId);
+
+            var mainTabs = ['home', 'alerts', 'map-screen', 'missions-hub'];
+            if (mainTabs.indexOf(screenId) >= 0) {
+                setActiveTab(screenId);
+            } else if (screenId === 'current-camps' || screenId === 'predictions') {
+                setActiveTab('missions-hub');
+            }
+
+            if (screenId === 'alerts') loadAlerts();
+            if (screenId === 'current-camps') loadCurrentCamps();
+            if (screenId === 'predictions') loadPredictions();
+            if (screenId === 'map-screen') {
+                if (!window.mapInitialized) {
+                    setTimeout(function() { initMap(); }, 200);
+                } else {
+                    if (map) {
+                        setTimeout(function() { 
+                            map.invalidateSize();
+                            console.log('Map invalidated');
+                        }, 100);
+                    }
+                    if (mapFocusCamp && map) applyMapFocus();
+                }
+            }
+        }
+
+        function goBack() {
+            if (screenHistory.length > 1) {
+                screenHistory.pop();
+                const prev = screenHistory[screenHistory.length - 1];
+                showScreen(prev, true);
+            }
+        }
+
+        function navigateToCamp(campId, type) {
+            var camp = allCamps.find(function(c) { return c.camp_id === campId; });
+            if (!camp) return;
+            var lat, lng;
+            if (type === 'current') {
+                lat = camp.current_lat;
+                lng = camp.current_lon;
+            } else {
+                lat = camp.predicted_lat_4wk;
+                lng = camp.predicted_lon_4wk;
+            }
+            mapFocusCamp = { lat: lat, lng: lng, camp_id: campId, type: type };
+            switchTab('map-screen');
+            if (window.mapInitialized && map) {
+                setTimeout(function() { applyMapFocus(); }, 300);
+            }
+        }
+
+        function applyMapFocus() {
+            if (!mapFocusCamp || !map) return;
+            map.flyTo([mapFocusCamp.lat, mapFocusCamp.lng], 16, { duration: 0.5 });
+            var marker = window.campMarkers && window.campMarkers[mapFocusCamp.type] && window.campMarkers[mapFocusCamp.type][mapFocusCamp.camp_id];
+            if (marker && marker.openPopup) marker.openPopup();
+            mapFocusCamp = null;
+        }
+
+        function viewConflictOnMap(camp1Id, camp2Id) {
+            var camp1 = allCamps.find(function(c) { return c.camp_id === camp1Id; });
+            var camp2 = allCamps.find(function(c) { return c.camp_id === camp2Id; });
+            if (!camp1 || !camp2) return;
+            
+            const midLat = (camp1.current_lat + camp2.current_lat) / 2;
+            const midLon = (camp1.current_lon + camp2.current_lon) / 2;
+            
+            mapFocusCamp = { lat: midLat, lng: midLon, camp_id: camp1Id, type: 'conflict' };
+            switchTab('map-screen');
+            if (window.mapInitialized && map) {
+                setTimeout(function() { 
+                    map.flyTo([midLat, midLon], 15, { duration: 0.5 });
+                }, 300);
+            }
+        }
+
+        // Form handling
+        function selectChoice(choice, element) {
+            selectedChoice = choice;
+            document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+            element.classList.add('selected');
+        }
+
+        function selectCampById(campId, type) {
+            const camp = allCamps.find(c => c.camp_id === campId);
+            if (!camp) return;
+            selectCampForVerification(camp, type);
+        }
+
+        function selectCampForVerification(camp, type) {
+            selectedCamp = camp;
+            if (type === 'current') {
+                var el = document.getElementById('confirm-current-camp-id');
+                if (el) el.textContent = camp.camp_id;
+                showScreen('verify-current');
+            } else {
+                var el = document.getElementById('confirm-prediction-camp-id');
+                if (el) el.textContent = camp.camp_id;
+                showScreen('verify-prediction');
+            }
+        }
+
+        function handlePhotoUpload(event) {
+            const file = event.target.files[0];
+            if (file) {
+                uploadedPhotoFile = file;
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    document.getElementById('preview-img').src = e.target.result;
+                    document.getElementById('photo-preview').style.display = 'block';
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function submitCurrentVerification() {
+            const name = document.getElementById('current-verifier-name').value.trim();
+            if (!name || !selectedChoice) {
+                alert('Please complete all required fields');
+                return;
+            }
+
+            var campId = selectedCamp.camp_id;
+            var isNotFound = (selectedChoice === 'no');
+
+            function afterSubmit() {
+                // Mark this camp as completed
+                if (!window.completedCampIds) window.completedCampIds = new Set();
+                window.completedCampIds.add(campId);
+                
+                console.log('Camp completed:', campId, 'Total completed:', window.completedCampIds.size);
+                
+                // Update camp status (don't remove from allCamps)
+                var camp = allCamps.find(function(c) { return c.camp_id === campId; });
+                if (camp) {
+                    if (isNotFound) {
+                        camp.not_found = true;
+                        console.log('Camp marked as not found:', campId);
+                    } else {
+                        camp.current_verified = true;
+                        console.log('Camp verified:', campId);
+                    }
+                }
+                
+                // Force refresh everything
+                refreshDashboard();
+                refreshMapFromAllCamps();
+                
+                // Show success modal
+                document.getElementById('modal').classList.add('show');
+                setTimeout(function() {
+                    document.getElementById('modal').classList.remove('show');
+                    showScreen('home');
+                    
+                    // Clear form
+                    document.getElementById('current-verifier-name').value = '';
+                    document.getElementById('current-herd-size').value = '';
+                    document.getElementById('current-notes').value = '';
+                    selectedChoice = null;
+                    document.querySelectorAll('.choice-btn').forEach(b => b.classList.remove('selected'));
+                }, 2000);
+            }
+
+            if (!db) {
+                afterSubmit();
+                return;
+            }
+            db.collection('confirmations').add({
+                camp_id: campId,
+                verifier_name: name,
+                found: selectedChoice === 'yes',
+                herd_size: document.getElementById('current-herd-size').value,
+                notes: document.getElementById('current-notes').value,
+                timestamp: new Date().toISOString(),
+                type: 'current_camp_verification'
+            }).then(function() {
+                afterSubmit();
+            });
+        }
+
+        function submitPredictionVerification() {
+            const name = document.getElementById('prediction-verifier-name').value.trim();
+            if (!name || !uploadedPhotoFile) {
+                alert('Please complete all required fields');
+                return;
+            }
+            document.getElementById('submit-btn').textContent = 'Uploading...';
+            document.getElementById('submit-btn').disabled = true;
+
+            function afterPredictionSubmit() {
+                // Mark this camp as completed
+                if (!window.completedCampIds) window.completedCampIds = new Set();
+                window.completedCampIds.add(selectedCamp.camp_id);
+                
+                var camp = allCamps.find(function(c) { return c.camp_id === selectedCamp.camp_id; });
+                if (camp) {
+                    camp.env_verified = true;
+                    console.log('Prediction verified:', camp.camp_id);
+                }
+                
+                // Force refresh everything
+                refreshDashboard();
+                refreshMapFromAllCamps();
+                
+                // Show success modal
+                document.getElementById('modal').classList.add('show');
+                setTimeout(function() {
+                    document.getElementById('modal').classList.remove('show');
+                    showScreen('home');
+                    
+                    // Clear form
+                    document.getElementById('prediction-verifier-name').value = '';
+                    document.getElementById('prediction-notes').value = '';
+                    document.getElementById('photo-preview').style.display = 'none';
+                    uploadedPhotoFile = null;
+                    document.getElementById('submit-btn').textContent = 'Submit Validation';
+                    document.getElementById('submit-btn').disabled = false;
+                }, 2000);
+            }
+
+            if (!db || !storage) {
+                afterPredictionSubmit();
+                return;
+            }
+            const storageRef = storage.ref('validations/' + selectedCamp.camp_id + '_' + Date.now() + '.jpg');
+            storageRef.put(uploadedPhotoFile)
+                .then(snapshot => snapshot.ref.getDownloadURL())
+                .then(photoURL => {
+                    return db.collection('confirmations').add({
+                        camp_id: selectedCamp.camp_id,
+                        verifier_name: name,
+                        photo_url: photoURL,
+                        notes: document.getElementById('prediction-notes').value,
+                        timestamp: new Date().toISOString(),
+                        type: 'environmental_validation'
+                    });
+                })
+                .then(function() {
+                    afterPredictionSubmit();
+                });
+        }
+
+        // Map
+        let map;
+        window.mapInitialized = false;
+
+        function initMap() {
+            if (window.mapInitialized && map) {
+                console.log('Map already initialized, just invalidating size');
+                map.invalidateSize();
+                return;
+            }
+
+            const mapElement = document.getElementById('map');
+            if (!mapElement) {
+                console.error('Map element not found!');
+                return;
+            }
+
+            console.log('Initializing map...');
+            console.log('Leaflet available:', typeof L !== 'undefined');
+            
+            try {
+                map = L.map('map', { zoomControl: false }).setView([peacekeeperLocation.lat, peacekeeperLocation.lon], 12);
+                
+                L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                    attribution: '\u00a9 OpenStreetMap \u00a9 CARTO',
+                    subdomains: 'abcd',
+                    maxZoom: 20
+                }).addTo(map);
+                
+                L.control.zoom({ position: 'topright' }).addTo(map);
+
+                const peacekeeperIcon = L.icon({
+                    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+                    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                    iconSize: [25, 41],
+                    iconAnchor: [12, 41]
+                });
+
+                L.marker([peacekeeperLocation.lat, peacekeeperLocation.lon], { icon: peacekeeperIcon })
+                    .addTo(map)
+                    .bindPopup('<strong>Your Location</strong>');
+
+                window.mapInitialized = true;
+                window.campLayers = [];
+                
+                console.log('Map initialized successfully');
+                
+                setTimeout(() => {
+                    map.invalidateSize();
+                    console.log('Map size invalidated after init');
+                }, 200);
+
+                if (allCamps.length > 0) {
+                    refreshMapFromAllCamps();
+                } else if (db) {
+                    db.collection('predictions').get().then(snapshot => {
+                        allCamps = [];
+                        snapshot.forEach(doc => {
+                            const data = doc.data();
+                            if (DEMO_VERIFIED_CAMPS.includes(data.camp_id)) data.env_verified = true;
+                            allCamps.push(data);
+                        });
+                        refreshMapFromAllCamps();
+                        if (mapFocusCamp) setTimeout(function() { applyMapFocus(); }, 200);
+                    });
+                }
+            } catch (e) {
+                console.error('Error initializing map:', e);
+            }
+        }
+
+        function refreshMapFromAllCamps() {
+            if (!map || !window.mapInitialized || !window.campLayers) {
+                console.log('Cannot refresh map - not initialized');
+                return;
+            }
+            
+            // Filter out camps marked as not found
+            const activeCamps = allCamps.filter(c => !c.not_found);
+            
+            console.log('Refreshing map with', activeCamps.length, 'camps');
+            
+            window.campLayers.forEach(function(layer) { map.removeLayer(layer); });
+            window.campLayers = [];
+            window.campMarkers.current = {};
+            window.campMarkers.prediction = {};
+            
+            if (!activeCamps.length) {
+                var nearbyEl = document.getElementById('nearby-count');
+                if (nearbyEl) nearbyEl.textContent = '0 nearby';
+                var mapSummaryEl = document.getElementById('map-summary-text');
+                if (mapSummaryEl) mapSummaryEl.textContent = '0 camps';
+                return;
+            }
+            
+            const currentIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-blue.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
+            });
+            const predIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                iconSize: [20, 33],
+                iconAnchor: [10, 33]
+            });
+            
+            let nearby = 0;
+            let verifiedCurrent = 0;
+            let verifiedPredictions = 0;
+            
+            activeCamps.forEach(function(d) {
+                if (DEMO_VERIFIED_CAMPS.includes(d.camp_id)) d.env_verified = true;
+                if (d.current_verified) verifiedCurrent++;
+                if (d.env_verified) verifiedPredictions++;
+                
+                const dist = calculateDistance(peacekeeperLocation.lat, peacekeeperLocation.lon, d.current_lat, d.current_lon);
+                if (dist <= CURRENT_CAMP_VERIFY_RADIUS_KM) nearby++;
+                
+                const currentStatus = d.current_verified
+                    ? '<br><span style="color: #34d399; font-weight: bold;">✓ Verified</span>'
+                    : '<br><span style="color: #999;">Not Verified</span><br><button onclick="selectCampById(\'' + d.camp_id.replace(/'/g, "\\'") + '\', \'current\')" style="margin-top:8px;padding:6px 12px;background:#4f8ff7;color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;">Verify Now</button>';
+                const predStatus = d.env_verified
+                    ? '<br><span style="color: #34d399; font-weight: bold;">✓ Verified</span>'
+                    : '<br><span style="color: #999;">Not Verified</span><br><button onclick="selectCampById(\'' + d.camp_id.replace(/'/g, "\\'") + '\', \'prediction\')" style="margin-top:8px;padding:6px 12px;background:#4f8ff7;color:#fff;border:none;border-radius:20px;font-size:12px;font-weight:600;cursor:pointer;">Verify Prediction</button>';
+                
+                var currentMrk = L.marker([d.current_lat, d.current_lon], { icon: currentIcon })
+                    .addTo(map)
+                    .bindPopup('<strong>' + d.camp_id + '</strong><br>Current Location' + currentStatus);
+                window.campMarkers.current[d.camp_id] = currentMrk;
+                window.campLayers.push(currentMrk);
+                
+                var predMrk = L.marker([d.predicted_lat_4wk, d.predicted_lon_4wk], { icon: predIcon })
+                    .addTo(map)
+                    .bindPopup('<strong>' + d.camp_id + '</strong><br>4-Week Prediction' + predStatus);
+                window.campMarkers.prediction[d.camp_id] = predMrk;
+                window.campLayers.push(predMrk);
+                
+                var line = L.polyline([
+                    [d.current_lat, d.current_lon],
+                    [d.predicted_lat_4wk, d.predicted_lon_4wk]
+                ], {
+                    color: d.env_verified ? '#34d399' : '#4f8ff7',
+                    weight: 2,
+                    opacity: 0.6,
+                    dashArray: '5, 5'
+                }).addTo(map);
+                window.campLayers.push(line);
+            });
+            
+            var nearbyEl = document.getElementById('nearby-count');
+            if (nearbyEl) nearbyEl.textContent = nearby + ' nearby';
+            var mapSummaryEl = document.getElementById('map-summary-text');
+            if (mapSummaryEl) {
+                mapSummaryEl.textContent = activeCamps.length + ' camps • ' + 
+                    verifiedCurrent + ' current verified • ' + 
+                    verifiedPredictions + ' predictions verified';
+            }
+            
+            // Add conflict markers
+            const conflicts = detectConflicts(allCamps);
+            const conflictIcon = L.icon({
+                iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-orange.png',
+                shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/images/marker-shadow.png',
+                iconSize: [25, 41],
+                iconAnchor: [12, 41]
+            });
+            
+            conflicts.forEach(function(conflict) {
+                const camp1 = activeCamps.find(c => c.camp_id === conflict.camp1);
+                const camp2 = activeCamps.find(c => c.camp_id === conflict.camp2);
+                if (camp1 && camp2) {
+                    const midLat = (camp1.current_lat + camp2.current_lat) / 2;
+                    const midLon = (camp1.current_lon + camp2.current_lon) / 2;
+                    
+                    var conflictMrk = L.marker([midLat, midLon], { icon: conflictIcon })
+                        .addTo(map)
+                        .bindPopup('<strong style="color:#f87171;">⚠ Conflict Alert</strong><br>' +
+                                   conflict.camp1 + ' & ' + conflict.camp2 + '<br>' +
+                                   '<span style="color:#999;font-size:11px;">' + conflict.distance.toFixed(1) + ' km apart</span>');
+                    window.campLayers.push(conflictMrk);
+                }
+            });
+            
+            console.log('Map refreshed with', activeCamps.length, 'camps');
+        }
+
+        function toggleMapLegend() {
+            var legend = document.getElementById('map-legend');
+            if (!legend) return;
+            legend.classList.toggle('open');
+        }
+    </script>
+</body>
+</html>
